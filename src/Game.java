@@ -1,59 +1,213 @@
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import javafx.geometry.Pos;
 
-import javax.swing.*;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 
 /**
  * Created by naatiq on 6/7/14.
  */
 public class Game {
-    //Set 1 for player positions
-    //Set 2 or finish position
-    //Set 0 for unoccupied positions
-    //Set -1 for positions out of grid
 
-    static int[][] grid;
-    private int finishX;
-    private int finishY;
+    private int[][] grid;
+    private Position initialPos;
+    private Position endPos;
 
-    public Game(int[][] grid) {
+    // Every Grid should have following values
+    // 0 for valid positions in play area
+    // 9 for positions outside play area
+    // 1 for player position
+    // 2 for end position
+    public Game(int[][] grid, Position initialPos, Position endPos) {
         this.grid = grid;
+        this.initialPos = initialPos;
+        this.endPos = endPos;
     }
 
-    public ArrayList<Game> nextStates() {
-        throw new NotImplementedException();
+    private boolean finished(State state) {
+        return state.isStanding() && state.getCurrent().get(0).equals(endPos);
     }
 
-    private int playerPos() {
-        throw new NotImplementedException();
-    }
-}
+    public ArrayList<State> solution() {
+        ArrayDeque<State> stack = new ArrayDeque<State>();
+        ArrayList<State> path = new ArrayList<State>();
+        State start = new State(initialPos);
+        stack.addFirst(start);
+        path.add(start);
+        boolean found = false;
+        while (stack.size() != 0 && !found) {
 
-class Position {
-    private int xPos;
-    private int yPos;
+            State currentState = stack.removeFirst();
+            for(State state: currentState.nextStates()) {
+                if(finished(state)) {
+                    found = true;
+                    break;
+                }
+                else {
+                    if(!path.contains(state)) {
+                        stack.addFirst(state);
+                    }
+                }
 
-    Position(int xPos, int yPos) {
-        this.xPos = xPos;
-        this.yPos = yPos;
+            }
+        }
+        return path;
+    }
+    private class Position {
+        int xPos;
+        int yPos;
+
+        private Position(int xPos, int yPos) {
+            this.xPos = xPos;
+            this.yPos = yPos;
+        }
+
+        public int getxPos() {
+            return xPos;
+        }
+
+        public int getyPos() {
+            return yPos;
+        }
+
+        public boolean isValid() {
+            return grid[xPos][yPos] != -1;
+        }
+
+        public Position nextX() {
+            return new Position(xPos + 1, yPos);
+        }
+
+        public Position prevX() {
+            return new Position(xPos - 1, yPos);
+        }
+
+        public Position nextY() {
+            return new Position(xPos, yPos + 1);
+        }
+
+        public Position prevY() {
+            return new Position(xPos, yPos - 1);
+        }
+
+        public boolean isXAligned(Position other) {
+            return this.xPos == other.xPos;
+        }
+
+        public boolean isYAligned(Position other) {
+            return this.yPos == other.yPos;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return ((Position)other).xPos == this.xPos && ((Position)other).yPos == this.yPos;
+        }
     }
 
-    public boolean isValid(int[][] grid) {
-        return !(grid[xPos][yPos] == -1);
-    }
-}
+    private class State {
 
-class State {
-    private ArrayList<Position> playerPos;
+        private boolean standing;
+        private ArrayList<Position> current = new ArrayList<Position>();
 
-    State(ArrayList<Position> playerPos) {
-        this.playerPos = playerPos;
+        private State(Position pos) {
+            standing = true;
+            current.add(pos);
+        }
+
+        private State(Position pos1, Position pos2) {
+            standing = false;
+            current.add(pos1);
+            current.add(pos2);
+        }
+
+        public boolean isStanding() {
+            return standing;
+        }
+
+        public ArrayList<Position> getCurrent() {
+            return current;
+        }
+
+        public ArrayList<State> nextStates () {
+            ArrayList<State> res = new ArrayList<State>();
+            if(isStanding()) {
+                Position currestPos = current.get(0);
+
+                // Calculate positions to the right of cube
+                Position pos1 = currestPos.nextX();
+                Position pos2 = pos1.nextX();
+                // if valid add the new State
+                checkAdd(res, pos1, pos2);
+
+                // Calculate positions to the left of cube
+                pos1 = currestPos.prevX();
+                pos2 = pos1.prevX();
+                // if valid add the new  State
+                checkAdd(res, pos1, pos2);
+
+                // Calculate positions below the cube
+                pos1 = currestPos.nextY();
+                pos2 = pos1.nextY();
+                // if valid add the new State
+                checkAdd(res, pos1, pos2);
+
+                // Calculate positions above the cube
+                pos1 = currestPos.prevY();
+                pos2 = pos2.prevY();
+                // if valid add the positions
+                checkAdd(res, pos1, pos2);
+            }
+
+            else {
+                Position currentPos1 = current.get(0);
+                Position currentPos2 = current.get(1);
+
+                // Checking if player is lying top to down
+                if(currentPos1.isXAligned(currentPos2)) {
+
+                    checkAdd(res, currentPos1.nextX(), currentPos2.nextX());
+
+                    checkAdd(res, currentPos1.prevX(), currentPos2.prevX());
+
+                    if(currentPos1.getyPos() < currentPos2.getyPos()) {
+                        checkAdd(res, currentPos1.prevY());
+                        checkAdd(res, currentPos2.nextY());
+                    }
+                    else {
+                        checkAdd(res, currentPos1.nextY());
+                        checkAdd(res, currentPos2.prevY());
+                    }
+                }
+
+                //Checking if the player is lying left to right
+                else {
+                    checkAdd(res, currentPos1.nextY(), currentPos2.nextY());
+                    checkAdd(res, currentPos1.prevY(), currentPos2.prevY());
+
+                    if(currentPos1.getxPos() < currentPos2.getyPos()) {
+                        checkAdd(res, currentPos1.prevX());
+                        checkAdd(res, currentPos2.nextX());
+                    }
+                    else {
+                        checkAdd(res, currentPos1.nextX());
+                        checkAdd(res, currentPos2.prevX());
+                    }
+                }
+            }
+
+            return res;
+        }
+
+        private void checkAdd(ArrayList<State> res, Position pos1, Position pos2) {
+            if(pos1.isValid() && pos2.isValid()) {
+                res.add(new State(pos1, pos2));
+            }
+        }
+
+        private void checkAdd(ArrayList<State> res, Position pos1) {
+            if(pos1.isValid()) {
+                res.add(new State(pos1));
+            }
+        }
     }
 
-    boolean isStanding() {
-        return playerPos.size() == 1;
-    }
-    ArrayList<State> nextStates() {
-        throw new NotImplementedException();
-    }
 }
