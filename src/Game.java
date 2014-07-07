@@ -1,5 +1,6 @@
 import javafx.geometry.Pos;
 
+import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 
@@ -17,10 +18,10 @@ public class Game {
     // 9 for positions outside play area
     // 1 for player position
     // 2 for end position
-    public Game(int[][] grid, Position initialPos, Position endPos) {
+    public Game(int[][] grid, int startX, int startY, int endX, int endY) {
         this.grid = grid;
-        this.initialPos = initialPos;
-        this.endPos = endPos;
+        this.initialPos = new Position(startX, startY);
+        this.endPos = new Position(endX, endY);
     }
 
     private boolean finished(State state) {
@@ -32,11 +33,12 @@ public class Game {
         ArrayList<State> path = new ArrayList<State>();
         State start = new State(initialPos);
         stack.addFirst(start);
-        path.add(start);
         boolean found = false;
         while (stack.size() != 0 && !found) {
 
             State currentState = stack.removeFirst();
+            path.add(currentState);
+            System.out.println(currentState);
             for(State state: currentState.nextStates()) {
                 if(finished(state)) {
                     found = true;
@@ -70,7 +72,9 @@ public class Game {
         }
 
         public boolean isValid() {
-            return grid[xPos][yPos] != -1;
+            //System.out.println(xPos);
+            //System.out.print(yPos);
+            return grid[xPos][yPos] != 9;
         }
 
         public Position nextX() {
@@ -100,6 +104,10 @@ public class Game {
         @Override
         public boolean equals(Object other) {
             return ((Position)other).xPos == this.xPos && ((Position)other).yPos == this.yPos;
+        }
+
+        public String toString() {
+            return "(" + xPos +", "+yPos + ")";
         }
     }
 
@@ -208,6 +216,47 @@ public class Game {
                 res.add(new State(pos1));
             }
         }
+
+        @Override
+        public String toString() {
+            String res = "";
+            for(Position pos: current){
+                res = res + " " + pos;
+            }
+
+            return res;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            State otherState = (State)other;
+            if(this.current.size() != otherState.current.size()) {
+                return false;
+            }
+            else {
+                if(this.current.size() == 1)
+                    return this.current.get(0).equals(otherState.current.get(0));
+                else {
+                    return this.current.get(0).equals(otherState.current.get(0)) &&
+                            this.current.get(1).equals(otherState.current.get(1));
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        int[][] grid = new int[][]
+                {{9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9}
+                ,{9,9,0,0,0,9,9}
+                ,{9,9,0,0,0,9,9}
+                ,{9,9,0,0,0,9,9}
+                ,{9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9}};
+
+        Game game = new Game(grid,2,2,4,4);
+        game.solution();
+
     }
 
 }
