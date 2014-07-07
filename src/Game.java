@@ -3,6 +3,7 @@ import javafx.geometry.Pos;
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by naatiq on 6/7/14.
@@ -28,31 +29,45 @@ public class Game {
         return state.isStanding() && state.getCurrent().get(0).equals(endPos);
     }
 
-    public ArrayList<State> solution() {
+    public ArrayDeque<State> solution() {
         ArrayDeque<State> stack = new ArrayDeque<State>();
-        ArrayList<State> path = new ArrayList<State>();
+        ArrayList<State> visited = new ArrayList<State>();
+        HashMap<State, ArrayDeque<State>> paths = new HashMap<State, ArrayDeque<State>>();
         State start = new State(initialPos);
+        State end = new State(endPos);
+
         stack.addFirst(start);
+
+        ArrayDeque<State> path = new ArrayDeque<State>();
+        path.addFirst(start);
+        paths.put(start, path);
+
         boolean found = false;
         while (stack.size() != 0 && !found) {
-
             State currentState = stack.removeFirst();
-            path.add(currentState);
-            System.out.println(currentState);
+            visited.add(currentState);
+            //System.out.println(currentState);
             for(State state: currentState.nextStates()) {
+                path = paths.get(currentState).clone();
+                path.addLast(state);
+                paths.put(state, path);
                 if(finished(state)) {
+                    end = state;
                     found = true;
                     break;
                 }
                 else {
-                    if(!path.contains(state)) {
+                    if(!visited.contains(state)) {
                         stack.addFirst(state);
                     }
                 }
 
             }
         }
-        return path;
+        for(State s: paths.get(end)) {
+            System.out.println(s);
+        }
+        return paths.get(end);
     }
     private class Position {
         int xPos;
@@ -246,15 +261,16 @@ public class Game {
 
     public static void main(String[] args) {
         int[][] grid = new int[][]
-                {{9,9,9,9,9,9,9}
-                ,{9,9,9,9,9,9,9}
-                ,{9,9,0,0,0,9,9}
-                ,{9,9,0,0,0,9,9}
-                ,{9,9,0,0,0,9,9}
-                ,{9,9,9,9,9,9,9}
-                ,{9,9,9,9,9,9,9}};
+                {{9,9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9,9}
+                ,{9,9,0,0,0,0,9,9}
+                ,{9,9,0,0,0,0,9,9}
+                ,{9,9,0,0,0,0,9,9}
+                ,{9,9,0,0,0,0,9,9}
+                ,{9,9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9,9}};
 
-        Game game = new Game(grid,2,2,4,4);
+        Game game = new Game(grid,2,2,5,2);
         game.solution();
 
     }
