@@ -30,27 +30,28 @@ public class Game {
     }
 
     public ArrayDeque<State> solution() {
-        ArrayDeque<State> stack = new ArrayDeque<State>();
+        ArrayDeque<State> queue = new ArrayDeque<State>();
         ArrayList<State> visited = new ArrayList<State>();
         HashMap<State, ArrayDeque<State>> paths = new HashMap<State, ArrayDeque<State>>();
         State start = new State(initialPos);
         State end = new State(endPos);
 
-        stack.addFirst(start);
+        queue.addFirst(start);
 
         ArrayDeque<State> path = new ArrayDeque<State>();
         path.addFirst(start);
         paths.put(start, path);
 
         boolean found = false;
-        while (stack.size() != 0 && !found) {
-            State currentState = stack.removeFirst();
+        while (queue.size() != 0 && !found) {
+            State currentState = queue.removeFirst();
             visited.add(currentState);
             //System.out.println(currentState);
             for(State state: currentState.nextStates()) {
                 path = paths.get(currentState).clone();
                 path.addLast(state);
-                paths.put(state, path);
+                if(paths.get(state) == null || paths.get(state).size() > path.size())
+                    paths.put(state, path);
                 if(finished(state)) {
                     end = state;
                     found = true;
@@ -58,7 +59,7 @@ public class Game {
                 }
                 else {
                     if(!visited.contains(state)) {
-                        stack.addFirst(state);
+                        queue.addLast(state);
                     }
                 }
 
@@ -153,29 +154,29 @@ public class Game {
         public ArrayList<State> nextStates () {
             ArrayList<State> res = new ArrayList<State>();
             if(isStanding()) {
-                Position currestPos = current.get(0);
+                Position currentPos = current.get(0);
 
                 // Calculate positions to the right of cube
-                Position pos1 = currestPos.nextX();
+                Position pos1 = currentPos.nextX();
                 Position pos2 = pos1.nextX();
                 // if valid add the new State
                 checkAdd(res, pos1, pos2);
 
                 // Calculate positions to the left of cube
-                pos1 = currestPos.prevX();
+                pos1 = currentPos.prevX();
                 pos2 = pos1.prevX();
                 // if valid add the new  State
                 checkAdd(res, pos1, pos2);
 
                 // Calculate positions below the cube
-                pos1 = currestPos.nextY();
+                pos1 = currentPos.nextY();
                 pos2 = pos1.nextY();
                 // if valid add the new State
                 checkAdd(res, pos1, pos2);
 
                 // Calculate positions above the cube
-                pos1 = currestPos.prevY();
-                pos2 = pos2.prevY();
+                pos1 = currentPos.prevY();
+                pos2 = pos1.prevY();
                 // if valid add the positions
                 checkAdd(res, pos1, pos2);
             }
@@ -206,7 +207,7 @@ public class Game {
                     checkAdd(res, currentPos1.nextY(), currentPos2.nextY());
                     checkAdd(res, currentPos1.prevY(), currentPos2.prevY());
 
-                    if(currentPos1.getxPos() < currentPos2.getyPos()) {
+                    if(currentPos1.getxPos() < currentPos2.getxPos()) {
                         checkAdd(res, currentPos1.prevX());
                         checkAdd(res, currentPos2.nextX());
                     }
@@ -252,8 +253,10 @@ public class Game {
                 if(this.current.size() == 1)
                     return this.current.get(0).equals(otherState.current.get(0));
                 else {
-                    return this.current.get(0).equals(otherState.current.get(0)) &&
-                            this.current.get(1).equals(otherState.current.get(1));
+                    return (this.current.get(0).equals(otherState.current.get(0)) &&
+                            this.current.get(1).equals(otherState.current.get(1))) ||
+                            (this.current.get(1).equals(otherState.current.get(0)) &&
+                            this.current.get(0).equals(otherState.current.get(1)));
                 }
             }
         }
@@ -261,16 +264,17 @@ public class Game {
 
     public static void main(String[] args) {
         int[][] grid = new int[][]
-                {{9,9,9,9,9,9,9,9}
-                ,{9,9,9,9,9,9,9,9}
-                ,{9,9,0,0,0,0,9,9}
-                ,{9,9,0,0,0,0,9,9}
-                ,{9,9,0,0,0,0,9,9}
-                ,{9,9,0,0,0,0,9,9}
-                ,{9,9,9,9,9,9,9,9}
-                ,{9,9,9,9,9,9,9,9}};
+                {{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,9,9,9,9}
+                ,{9,9,0,0,0,0,9,9,0,0,0,9,9,0,0,9,9,9,9}
+                ,{9,9,0,0,0,0,0,0,0,0,0,9,9,0,0,0,0,9,9}
+                ,{9,9,0,0,0,0,9,9,9,9,9,9,9,0,0,0,0,9,9}
+                ,{9,9,0,0,0,0,9,9,9,9,9,9,9,0,0,0,0,9,9}
+                ,{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9}
+                ,{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9}};
 
-        Game game = new Game(grid,2,2,5,2);
+        Game game = new Game(grid,5,3,5,15);
         game.solution();
 
     }
